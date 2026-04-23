@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة العيادة</title>
+    <link rel="icon" href="FB_IMG_1756663463550.jpg" type="image/jpg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // التحقق من وجود بيانات تسجيل دخول محفوظة
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedUsername = localStorage.getItem('savedUsername');
+            const savedPassword = localStorage.getItem('savedPassword');
+            const rememberMe = localStorage.getItem('rememberMe') === 'true';
+            
+            if (rememberMe && savedUsername && savedPassword) {
+                document.getElementById('loginUsername').value = savedUsername;
+                document.getElementById('loginPassword').value = savedPassword;
+                document.getElementById('rememberMe').checked = true;
+                
+                // محاولة تسجيل الدخول التلقائي
+                setTimeout(() => {
+                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+                }, 500);
+            }
+        });
+    </script>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div class="modal login-modal" id="loginModal">
+        <div class="login-container">
+            <div class="login-logo">
+                <img src="FB_IMG_1756663463550.jpg" alt="Clinic Logo">
+            </div>
+            <h2 class="login-title">تسجيل الدخول إلى النظام</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">اسم المستخدم</label>
+                    <input type="text" class="form-input" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">كلمة المرور</label>
+                    <input type="password" class="form-input" id="loginPassword" required>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="rememberMe" checked>
+                        <span class="checkmark"></span>
+                        تذكر بيانات الدخول
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="loginBtn">
+                        <span id="loginText">تسجيل الدخول</span>
+                        <span id="loginSpinner" class="spinner" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Content -->
+    <div id="appContent" style="display: none;">
+        
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <img src="FB_IMG_1756663463550.jpg" alt="صورة الدكتور" class="doctor-avatar">
+                <div class="header-info">
+                    <div class="clinic-name">دكتور يحيى الجبوري</div>
+                    <div class="doctor-name">
+                        <i class="fas fa-certificate"></i>
+                        دكتور يحيى الجبوري
+                    </div>
+                </div>
+            </div>
+            <!-- نافذة تثبيت التطبيق -->
+            <div class="modal" id="installPromptModal" style="display: none;">
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <div class="modal-title">
+                            <i class="fas fa-download"></i> تثبيت التطبيق
+                        </div>
+                        <div class="close-modal" id="closeInstallPrompt">&times;</div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="install-prompt-content">
+                            <div class="install-icon">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <h3>ثبّت التطبيق على شاشتك الرئيسية</h3>
+                            <p>احصل على تجربة أفضل وسهولة الوصول إلى العيادة من خلال تثبيت التطبيق على شاشتك الرئيسية</p>
+                            
+                            <div class="install-steps">
+                                <div class="install-step">
+                                    <span class="step-number">1</span>
+                                    <span class="step-text">اضغط على زر القائمة (<i class="fas fa-ellipsis-v"></i>) في المتصفح</span>
+                                </div>
+                                <div class="install-step">
+                                    <span class="step-number">2</span>
+                                    <span class="step-text">اختر "إضافة إلى الشاشة الرئيسية"</span>
+                                </div>
+                                <div class="install-step">
+                                    <span class="step-number">3</span>
+                                    <span class="step-text">اضغط على "إضافة" للتثبيت</span>
+                                </div>
+                            </div>
+                            
+                            <div class="install-actions">
+                                <button class="btn btn-secondary" id="laterInstallBtn">
+                                    <i class="fas fa-clock"></i> لاحقاً
+                                </button>
+                                <button class="btn btn-primary" id="installAppBtn">
+                                    <i class="fas fa-download"></i> تثبيت الآن
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="header-icons">
+                <div class="header-icon" id="searchBtn">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="header-icon" id="notificationsBtn">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationsCount">0</span>
+                </div>
+                <!-- زر المصروفات المضاف -->
+                
+                <div class="header-icon" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content Tabs -->
+        <div class="content-tabs">
+            <div class="content-tab active" data-tab="dashboard">
+                <i class="fas fa-home"></i> الرئيسية
+            </div>
+            <div class="content-tab" data-tab="appointments">
+                <i class="fas fa-calendar-alt"></i> المواعيد
+            </div>
+            <div class="content-tab" data-tab="clients">
+                <i class="fas fa-users"></i> العملاء
+            </div>
+            <div class="content-tab" data-tab="statistics">
+                <i class="fas fa-chart-pie"></i> الإحصائيات
+            </div>
+            <!-- إضافة تبويب جديد للمحذوفات -->
+            <div class="content-tab" data-tab="deleted">
+                <i class="fas fa-trash"></i> المحذوفات
+            </div>
+        </div>
+        
+        <!-- Dashboard Tab Content -->
+        <div class="tab-content active" id="dashboard">
+    <div class="dashboard">
+        <div class="dashboard-stats">
+            <!-- تم تغيير "الإيرادات الشهرية" إلى "الأرباح الواصلة" -->
+            <div class="dashboard-stat-card">
+                <div class="dashboard-stat-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="dashboard-stat-value" id="dashboardMonthlyProfit">0 د.ع</div>
+                <div class="dashboard-stat-label">الأرباح الواصلة</div> <!-- التغيير هنا -->
+            </div>
+            
+            <div class="dashboard-stat-card">
+                <div class="dashboard-stat-icon">
+                    <i class="fas fa-user-friends"></i>
+                </div>
+                <div class="dashboard-stat-value" id="dashboardClientsCount">0</div>
+                <div class="dashboard-stat-label">المراجعين هذا الشهر</div>
+            </div>
+            
+            <div class="dashboard-stat-card">
+                <div class="dashboard-stat-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="dashboard-stat-value" id="dashboardAppointmentsCount">0</div>
+                <div class="dashboard-stat-label">المواعيد اليوم</div>
+            </div>
+            
+            <div class="dashboard-stat-card">
+                <div class="dashboard-stat-icon">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="dashboard-stat-value" id="dashboardAttendanceRate">0%</div>
+                <div class="dashboard-stat-label">نسبة الحضور</div>
+            </div>
+        </div>
+                
+                <div class="dashboard-section">
+                    <div class="dashboard-section-header">
+                        <div class="dashboard-section-title">
+                            <i class="fas fa-bell"></i> المراجعين القادمون (خلال 3 أيام)
+                        </div>
+                        <a href="#" class="dashboard-section-link" data-tab="appointments">
+                            عرض الكل <i class="fas fa-arrow-left"></i>
+                        </a>
+                    </div>
+                    <div id="dashboardUpcomingList">
+                        <div class="loading-spinner">
+                            <div class="spinner"></div>
+                            <p>جاري تحميل البيانات...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-section">
+                    <div class="dashboard-section-header">
+                        <div class="dashboard-section-title">
+                            <i class="fas fa-star"></i> أكثر الجلسات طلباً
+                        </div>
+                        <a href="#" class="dashboard-section-link" data-tab="statistics">
+                            عرض الكل <i class="fas fa-arrow-left"></i>
+                        </a>
+                    </div>
+                    <div id="dashboardPopularServices">
+                        <div class="loading-spinner">
+                            <div class="spinner"></div>
+                            <p>جاري تحميل البيانات...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Appointments Tab Content -->
+        <div class="tab-content" id="appointments">
+            <div class="filter-bar">
+                <select class="filter-select" id="appointmentFilter">
+                    <option value="all">كل المواعيد</option>
+                    <option value="today">اليوم</option>
+                    <option value="week">هذا الأسبوع</option>
+                    <option value="month">هذا الشهر</option>
+                    <option value="upcoming">القادمة</option>
+                    <option value="past">المنتهية</option>
+                    <option value="followup">مواعيد المتابعة</option>
+                </select>
+                <input type="text" class="search-input" id="appointmentSearch" placeholder="بحث...">
+            </div>
+            
+            <div id="appointmentsContainer">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>جاري تحميل المواعيد...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Clients Tab Content -->
+        <div class="tab-content" id="clients">
+            <div class="filter-bar">
+                <select class="filter-select" id="clientFilter">
+                    <option value="all">كل العملاء</option>
+                    <option value="new">جدد</option>
+                    <option value="regular">دائمين</option>
+                    <option value="noShow">متغيبين</option>
+                </select>
+                <input type="text" class="search-input" id="clientSearch" placeholder="بحث باسم المراجع...">
+            </div>
+            
+            <div id="clientsContainer">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>جاري تحميل العملاء...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Tab Content -->
+        <div class="tab-content" id="statistics">
+            <div class="filter-bar" style="margin-top: 20px;">
+                <select class="filter-select" id="statsPeriod">
+                    <option value="day">اليوم</option>
+                    <option value="week">الأسبوع</option>
+                    <option value="month" selected>الشهر</option>
+                    <option value="year">السنة</option>
+                </select>
+                <button class="export-btn" id="exportStatsBtn">
+                    <i class="fas fa-file-export"></i> تصدير البيانات
+                </button>
+            </div>
+            
+            <div class="section-title">
+                <i class="fas fa-chart-line"></i> نظرة عامة على الإحصائيات
+            </div>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="stat-value" id="monthlyProfit">0 د.ع</div>
+                    <div class="stat-label">إجمالي الأرباح الشهرية</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="stat-value" id="receivedProfit">0 د.ع</div>
+                    <div class="stat-label">الأرباح الواصلة</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-money-bill-alt"></i>
+                    </div>
+                    <div class="stat-value" id="remainingProfit">0 د.ع</div>
+                    <div class="stat-label">الأرباح المتبقية</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="stat-value" id="clientsCount">0</div>
+                    <div class="stat-label">عدد المراجعين</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-value" id="appointmentsCount">0</div>
+                    <div class="stat-label">عدد المواعيد</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-value" id="attendanceRate">0%</div>
+                    <div class="stat-label">نسبة الحضور</div>
+                </div>
+            </div>
+            
+            <div class="section-title">
+                <i class="fas fa-chart-bar"></i> الإيرادات الشهرية
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="revenueChartCanvas"></canvas>
+            </div>
+            
+            <div class="section-title">
+                <i class="fas fa-star"></i> أكثر الجلسات طلباً
+            </div>
+            
+            <div class="popular-services" id="popularServices">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>جاري تحميل البيانات...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Deleted Items Tab Content -->
+        <div class="tab-content" id="deleted">
+            <div class="filter-bar">
+                <select class="filter-select" id="deletedFilter">
+                    <option value="all">كل المحذوفات</option>
+                    <option value="appointments">المواعيد المحذوفة</option>
+                    <option value="clients">العملاء المحذوفين</option>
+                </select>
+                <button class="btn btn-danger" id="emptyTrashBtn">
+                    <i class="fas fa-trash"></i> تفريغ المحذوفات
+                </button>
+            </div>
+            
+            <div id="deletedContainer">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>جاري تحميل المحذوفات...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add Button -->
+        <button class="add-btn" id="addBtn">
+            <i class="fas fa-plus"></i>
+        </button>
+        
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <a href="#" class="nav-item active" data-tab="dashboard">
+                <div class="nav-icon"><i class="fas fa-home"></i></div>
+                <div class="nav-label">الرئيسية</div>
+            </a>
+            <a href="#" class="nav-item" data-tab="clients">
+                <div class="nav-icon"><i class="fas fa-users"></i></div>
+                <div class="nav-label">العملاء</div>
+            </a>
+            <a href="#" class="nav-item" data-tab="appointments">
+                <div class="nav-icon"><i class="fas fa-calendar-alt"></i></div>
+                <div class="nav-label">المواعيد</div>
+            </a>
+            <a href="#" class="nav-item" data-tab="statistics">
+                <div class="nav-icon"><i class="fas fa-chart-pie"></i></div>
+                <div class="nav-label">الإحصائيات</div>
+            </a>
+        </div>
+        
+        <!-- Add Appointment Modal -->
+        <div class="modal" id="addModal">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="fas fa-calendar-plus"></i> إضافة موعد جديد
+                    </div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                
+                <form id="appointmentForm">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-calendar-alt"></i> نوع الموعد
+                        </label>
+                        <select class="form-input" id="appointmentType" required>
+                            <option value="new">موعد جديد</option>
+                            <option value="followup">موعد متابعة متعدد المراجعات</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="followupDetails" style="display: none;">
+                        <label class="form-label">
+                            <i class="fas fa-calendar-check"></i> تفاصيل المتابعة
+                        </label>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">عدد الجلسات</label>
+                                <input type="number" class="form-input" id="followupSessions" min="1" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">المدة بين الجلسات (أيام)</label>
+                                <input type="number" class="form-input" id="followupInterval" min="1" value="7">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-user"></i> اسم المراجع
+                            </label>
+                            <input type="text" class="form-input" id="clientName" placeholder="أدخل الاسم الكامل" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-phone"></i> رقم الهاتف
+                            </label>
+                            <div class="input-with-symbol">
+                                <span class="input-symbol">+964</span>
+                                <input type="tel" class="form-input" id="clientPhone" placeholder="أدخل رقم الهاتف" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-calendar-day"></i> تاريخ الموعد
+                            </label>
+                            <input type="date" class="form-input" id="appointmentDate" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-clock"></i> وقت الموعد
+                            </label>
+                            <input type="time" class="form-input" id="appointmentTime" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-spa"></i> نوع الجلسة
+                        </label>
+                        <select class="form-input" id="serviceType" required>
+                            <option value="">اختر نوع الجلسة</option>
+                            <option value="جلسة علاج التصبغات">جلسة علاج التصبغات</option>
+                            <option value="جلسة العناية بالبشرة">جلسة العناية بالبشرة</option>
+                            <option value="حقن البوتوكس">حقن البوتوكس</option>
+                            <option value="حقن الفيلر">حقن الفيلر</option>
+                            <option value="حقن الميزوثرابي">حقن الميزوثرابي</option>
+                            <option value="علاج تساقط الشعر">علاج تساقط الشعر</option>
+                            <option value="علاج الهالات السوداء">علاج الهالات السوداء</option>
+                            <option value="علاج حب الشباب">علاج حب الشباب</option>
+                            <option value="علاج آثار حب الشباب">علاج آثار حب الشباب</option>
+                            <option value="حقن فيلر الشفاه">حقن فيلر الشفاه</option>
+                            <option value="التغيير الشامل بالفيلر">التغيير الشامل بالفيلر</option>
+                            <option value="أخرى">أخرى</option>
+                        </select>
+                        <button type="button" class="add-service-btn" id="addServiceBtn">
+                            <i class="fas fa-plus"></i> إضافة خدمة جديدة
+                        </button>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-money-bill-wave"></i> سعر الجلسة
+                            </label>
+                            <div class="input-with-symbol">
+                                <input type="number" class="form-input" id="totalPrice" placeholder="أدخل السعر" required>
+                                <span class="input-symbol">د.ع</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-hand-holding-usd"></i> المبلغ المدفوع
+                            </label>
+                            <div class="input-with-symbol">
+                                <input type="number" class="form-input" id="paidAmount" placeholder="أدخل المبلغ المدفوع">
+                                <span class="input-symbol">د.ع</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-notes-medical"></i> ملاحظات إضافية
+                        </label>
+                        <textarea class="form-input" id="notes" rows="3" placeholder="أي ملاحظات أو تفاصيل إضافية"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-modal">
+                            <i class="fas fa-times"></i> إلغاء
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <span id="submitText"><i class="fas fa-save"></i> حفظ الموعد</span>
+                            <span id="submitSpinner" class="spinner" style="display: none;"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Client Details Modal -->
+        <div class="modal" id="clientModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">تفاصيل المراجع</div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                
+                <div id="clientModalContent">
+                    <!-- سيتم ملؤها ديناميكياً -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointment Details Modal -->
+        <div class="modal" id="appointmentDetailsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">تفاصيل الموعد</div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                
+                <div id="appointmentDetailsContent">
+                    <!-- سيتم ملؤها ديناميكياً -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Options Modal -->
+        <div class="modal" id="messageOptionsModal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="fas fa-comment"></i> خيارات إرسال الرسائل
+                    </div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                
+                <div class="modal-body">
+                    <div id="messageOptionsContent">
+                        <!-- سيتم ملؤها ديناميكياً -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Message Modal -->
+        <div class="modal" id="editMessageModal">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="fas fa-edit"></i> تعديل الرسالة قبل الإرسال
+                    </div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">نص الرسالة</label>
+                        <textarea class="form-input" id="messageText" rows="8" placeholder="أدخل نص الرسالة هنا..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-modal">إلغاء</button>
+                        <button type="button" class="btn btn-primary" id="sendEditedMessageBtn">
+                            <i class="fab fa-whatsapp"></i> إرسال الرسالة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Print Options Modal الجديد -->
+        <div class="modal" id="printOptionsModal">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="fas fa-print"></i> خيارات الطباعة
+                    </div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="print-options">
+                        <div class="print-option-item">
+                            <input type="checkbox" id="printClientName" checked>
+                            <label for="printClientName">اسم المراجع</label>
+                        </div>
+                        <div class="print-option-item">
+                            <input type="checkbox" id="printPhone" checked>
+                            <label for="printPhone">رقم الهاتف</label>
+                        </div>
+                        <div class="print-option-item">
+                            <input type="checkbox" id="printDate" checked>
+                            <label for="printDate">التاريخ والوقت</label>
+                        </div>
+                        <div class="print-option-item">
+                            <input type="checkbox" id="printService" checked>
+                            <label for="printService">نوع الخدمة</label>
+                        </div>
+                        <div class="print-option-item">
+                            <input type="checkbox" id="printPrice" checked>
+                            <label for="printPrice">السعر</label>
+                        </div>
+                        <div class="print-option-item">
+                            <input type="checkbox" id="printPaid" checked>
+                            <label for="printPaid">المبلغ المدفوع</label>
+                        </div>
+                        <div class="print-option-item">
+                            <input type="checkbox" id="printRemaining" checked>
+                            <label for="printRemaining">المبلغ المتبقي</label>
+                        </div>
+                        <div class="print-option-item">
+                            <input type="checkbox" id="printNotes" checked>
+                            <label for="printNotes">الملاحظات</label>
+                        </div>
+                        <div class="print-option-item">
+                            <input type="checkbox" id="printHistory" checked>
+                            <label for="printHistory">سجل المراجعات</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="printAsPaper">
+                            <i class="fas fa-print"></i> طباعة ورقي
+                        </button>
+                        <button type="button" class="btn btn-primary" id="sendToWhatsApp">
+                            <i class="fab fa-whatsapp"></i> إرسال بالواتساب
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add Service Modal الجديد -->
+        <div class="modal" id="addServiceModal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="fas fa-plus-circle"></i> إضافة خدمة جديدة
+                    </div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">اسم الخدمة</label>
+                        <input type="text" class="form-input" id="serviceName" placeholder="أدخل اسم الخدمة">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-modal">إلغاء</button>
+                        <button type="button" class="btn btn-primary" id="saveServiceBtn">
+                            <i class="fas fa-save"></i> حفظ الخدمة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
